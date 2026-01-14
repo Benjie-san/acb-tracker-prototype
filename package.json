@@ -1,0 +1,12 @@
+{
+  "name": "acb-tracker",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev -w acb-tracker-frontend",
+    "dev:backend": "npm run dev -w acb-tracker-backend",
+    "install:all": "npm install --workspaces"
+  }
+}
