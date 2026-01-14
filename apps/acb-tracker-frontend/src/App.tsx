@@ -1294,7 +1294,9 @@ function App() {
         throw new Error(message)
       }
 
-      const results = Array.isArray(payload.results) ? payload.results : []
+      const results: { status?: string }[] = Array.isArray(payload.results)
+        ? payload.results
+        : []
       const updatedCount = results.filter((item) => item.status === 'updated').length
       const failedCount = results.length - updatedCount
       setBulkSuccess(
