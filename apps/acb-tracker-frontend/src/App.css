@@ -11,25 +11,20 @@
   --line: rgba(6, 30, 64, 0.14);
   --accent: var(--brand-blue);
   --accent-strong: var(--brand-navy);
-  --accent-soft: rgba(12, 158, 218, 0.16);
-  --accent-tint: rgba(12, 158, 218, 0.12);
-  --accent-border: rgba(12, 158, 218, 0.35);
+  --accent-soft: rgba(12, 158, 218, 0.1);
+  --accent-tint: rgba(12, 158, 218, 0.08);
+  --accent-border: rgba(12, 158, 218, 0.28);
   --warm: #d97706;
-  --shadow: 0 32px 70px -50px rgba(6, 30, 64, 0.45);
-  --page-gradient: linear-gradient(
-    120deg,
-    #f2f2f2 0%,
-    rgba(12, 158, 218, 0.12) 45%,
-    rgba(6, 30, 64, 0.08) 100%
-  );
-  --shell-bg: rgba(242, 242, 242, 0.94);
-  --shell-border: rgba(6, 30, 64, 0.16);
-  --surface-glass: rgba(242, 242, 242, 0.75);
-  --surface-muted: rgba(6, 30, 64, 0.06);
-  --surface-strong: rgba(242, 242, 242, 0.98);
-  --focus-ring: rgba(12, 158, 218, 0.28);
-  --glow-primary: rgba(12, 158, 218, 0.32);
-  --glow-secondary: rgba(6, 30, 64, 0.22);
+  --shadow: none;
+  --page-gradient: var(--paper);
+  --shell-bg: var(--card);
+  --shell-border: rgba(6, 30, 64, 0.12);
+  --surface-glass: var(--card);
+  --surface-muted: rgba(6, 30, 64, 0.04);
+  --surface-strong: var(--card);
+  --focus-ring: rgba(12, 158, 218, 0.2);
+  --glow-primary: transparent;
+  --glow-secondary: transparent;
 }
 
 .app[data-theme='dark'] {
@@ -40,58 +35,31 @@
   --line: rgba(242, 242, 242, 0.18);
   --accent: #0c9eda;
   --accent-strong: #0c9eda;
-  --accent-soft: rgba(12, 158, 218, 0.2);
-  --accent-tint: rgba(12, 158, 218, 0.14);
-  --accent-border: rgba(12, 158, 218, 0.45);
-  --shadow: 0 32px 80px -54px rgba(2, 8, 18, 0.85);
-  --page-gradient: linear-gradient(
-    120deg,
-    #061e40 0%,
-    rgba(12, 158, 218, 0.18) 50%,
-    rgba(6, 30, 64, 0.92) 100%
-  );
-  --shell-bg: rgba(6, 30, 64, 0.88);
-  --shell-border: rgba(12, 158, 218, 0.2);
-  --surface-glass: rgba(6, 30, 64, 0.72);
-  --surface-muted: rgba(12, 158, 218, 0.12);
-  --surface-strong: rgba(6, 30, 64, 0.98);
-  --focus-ring: rgba(12, 158, 218, 0.4);
-  --glow-primary: rgba(12, 158, 218, 0.4);
-  --glow-secondary: rgba(12, 158, 218, 0.2);
+  --accent-soft: rgba(12, 158, 218, 0.16);
+  --accent-tint: rgba(12, 158, 218, 0.12);
+  --accent-border: rgba(12, 158, 218, 0.32);
+  --shadow: none;
+  --page-gradient: var(--paper);
+  --shell-bg: var(--card);
+  --shell-border: rgba(12, 158, 218, 0.16);
+  --surface-glass: var(--card);
+  --surface-muted: rgba(12, 158, 218, 0.08);
+  --surface-strong: var(--card);
+  --focus-ring: rgba(12, 158, 218, 0.28);
+  --glow-primary: transparent;
+  --glow-secondary: transparent;
 }
 
 .app {
   min-height: 100vh;
   padding: clamp(24px, 4vw, 56px);
   background: var(--page-gradient);
-  position: relative;
-  overflow: hidden;
-  overflow-x: hidden;
   color: var(--ink);
 }
 
 .app::before,
 .app::after {
-  content: '';
-  position: absolute;
-  width: 360px;
-  height: 360px;
-  border-radius: 50%;
-  background: radial-gradient(circle at top, var(--glow-primary), transparent 65%);
-  opacity: 0.6;
-  filter: blur(0px);
-  z-index: 0;
-}
-
-.app::before {
-  top: -120px;
-  right: -120px;
-}
-
-.app::after {
-  bottom: -160px;
-  left: -120px;
-  background: radial-gradient(circle at top, var(--glow-secondary), transparent 65%);
+  display: none;
 }
 
 .login-shell {
@@ -99,10 +67,9 @@
   z-index: 1;
   background: var(--shell-bg);
   border: 1px solid var(--shell-border);
-  border-radius: 28px;
+  border-radius: 12px;
   padding: clamp(24px, 4vw, 48px);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(6px);
+  box-shadow: none;
 }
 
 .brand {
@@ -249,7 +216,6 @@
 }
 
 .intro {
-  animation: fade-up 0.6s ease both;
 }
 
 .eyebrow {
@@ -261,7 +227,6 @@
 }
 
 .intro h1 {
-  font-family: "Fraunces", serif;
   font-size: clamp(2.2rem, 3vw, 3.4rem);
   margin: 0 0 16px;
   color: var(--ink);
@@ -292,12 +257,12 @@
 
 .grid-preview {
   background: var(--card);
-  border-radius: 20px;
+  border-radius: 12px;
   border: 1px solid var(--line);
   padding: 18px;
   display: grid;
   gap: 12px;
-  box-shadow: 0 20px 40px -32px rgba(6, 30, 64, 0.4);
+  box-shadow: none;
 }
 
 .grid-header,
@@ -363,12 +328,10 @@
 
 .panel {
   background: var(--card);
-  border-radius: 22px;
+  border-radius: 12px;
   border: 1px solid var(--line);
   padding: clamp(22px, 3vw, 32px);
-  box-shadow: 0 20px 60px -45px rgba(6, 30, 64, 0.45);
-  animation: fade-up 0.6s ease both;
-  animation-delay: 0.15s;
+  box-shadow: none;
 }
 
 .shipments-panel {
@@ -391,7 +354,6 @@
 
 .shipments-header h2 {
   margin: 0;
-  font-family: "Fraunces", serif;
   color: var(--ink);
 }
 
@@ -413,7 +375,6 @@
 
 .detail-title {
   margin: 0;
-  font-family: "Fraunces", serif;
   color: var(--ink);
 }
 
@@ -569,23 +530,26 @@
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: 4px;
   display: grid;
   place-items: center;
   position: relative;
   cursor: pointer;
+  box-shadow: inset 0 0 0 1px transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .app[data-theme='dark'] .shipments-grid-cell input[type='checkbox'] {
-  background: #f2f2f2;
-  border-color: rgba(242, 242, 242, 0.6);
+  background: rgba(242, 242, 242, 0.16);
+  border-color: rgba(242, 242, 242, 0.45);
 }
 
 .shipments-grid-cell input[type='checkbox']:checked {
   background: var(--accent);
   border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(12, 158, 218, 0.2);
 }
 
 .shipments-grid-cell input[type='checkbox']:checked::after {
@@ -597,6 +561,7 @@
   border-top: 0;
   border-left: 0;
   transform: rotate(45deg);
+  display: block;
 }
 
 .shipments-grid-cell input[type='checkbox']:focus-visible {
@@ -703,7 +668,6 @@
 
 .panel-header h2 {
   margin: 0 0 8px;
-  font-family: "Fraunces", serif;
   color: var(--ink);
 }
 
@@ -729,7 +693,7 @@
 
 .accordion-section {
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 12px;
   background: var(--card);
   overflow: hidden;
 }
@@ -884,13 +848,13 @@
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .primary-button:hover {
   background: var(--accent-strong);
-  box-shadow: 0 12px 24px -18px rgba(12, 158, 218, 0.4);
-  transform: translateY(-1px);
+  box-shadow: none;
+  transform: none;
 }
 
 .primary-button:disabled {
@@ -916,7 +880,7 @@
   align-items: center;
   gap: 14px;
   padding: 14px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid var(--line);
   background: var(--surface-glass);
   margin-bottom: 18px;
@@ -986,7 +950,6 @@
   grid-template-columns: var(--sidebar-width) minmax(0, 1.2fr) minmax(0, 0.8fr);
   gap: clamp(24px, 4vw, 48px);
   align-items: start;
-  animation: fade-up 0.6s ease both;
   min-width: 0;
   transition: grid-template-columns 0.3s ease;
 }
@@ -1014,10 +977,10 @@
 
 .sidebar-card {
   background: var(--card);
-  border-radius: 18px;
+  border-radius: 12px;
   border: 1px solid var(--line);
   padding: 16px;
-  box-shadow: 0 18px 40px -32px rgba(6, 30, 64, 0.4);
+  box-shadow: none;
   display: grid;
   gap: 12px;
   transition: padding 0.3s ease, gap 0.3s ease;
@@ -1236,7 +1199,6 @@
 
 
 .dashboard-main h1 {
-  font-family: "Fraunces", serif;
   font-size: clamp(2rem, 3vw, 3rem);
   margin: 0 0 12px;
   color: var(--ink);
@@ -1261,7 +1223,6 @@
 
 .overview-panel h3 {
   margin: 4px 0 0;
-  font-family: "Fraunces", serif;
   color: var(--ink);
 }
 
@@ -1381,9 +1342,9 @@
 .stat-card {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 14px 16px;
-  box-shadow: 0 12px 30px -26px rgba(6, 30, 64, 0.4);
+  box-shadow: none;
 }
 
 .stat-label {
@@ -1446,7 +1407,6 @@
 
 .panel-note h3 {
   margin: 0 0 16px;
-  font-family: "Fraunces", serif;
   font-size: 1.2rem;
   color: var(--ink);
 }
@@ -1509,9 +1469,9 @@
   width: min(560px, 100%);
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: 12px;
   padding: 20px;
-  box-shadow: var(--shadow);
+  box-shadow: none;
   display: grid;
   gap: 16px;
 }
@@ -1525,7 +1485,6 @@
 
 .modal-header h2 {
   margin: 0;
-  font-family: "Fraunces", serif;
   color: var(--ink);
 }
 
