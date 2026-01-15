@@ -205,6 +205,7 @@ function App() {
   const [sortDraftField, setSortDraftField] = useState('createdAt')
   const [sortDraftOrder, setSortDraftOrder] = useState<'asc' | 'desc'>('desc')
   const [monthDraft, setMonthDraft] = useState('')
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [openSections, setOpenSections] = useState<Set<string>>(
     () => new Set(['shipment-details'])
   )
@@ -316,6 +317,7 @@ function App() {
   useEffect(() => {
     if (route !== 'shipments-new') {
       setIsActivityOpen(false)
+      setIsDeleteOpen(false)
     }
   }, [route, setIsActivityOpen])
 
@@ -652,6 +654,40 @@ function App() {
     setCreateSuccess(null)
 
     const isEditing = Boolean(editingId)
+    if (!isEditing) {
+      const missingFields = GROUP_A_FIELDS.reduce<string[]>((acc, field) => {
+        const value = createForm[field.key]
+        if (field.input === 'checkbox') {
+          return acc
+        }
+        if (field.input === 'number') {
+          if (value === '' || value === null || value === undefined) {
+            acc.push(field.label)
+          }
+          return acc
+        }
+        if (field.input === 'date') {
+          if (!value) {
+            acc.push(field.label)
+          }
+          return acc
+        }
+        const textValue = String(value || '').trim()
+        if (!textValue) {
+          acc.push(field.label)
+        }
+        return acc
+      }, [])
+      if (missingFields.length) {
+        const preview = missingFields.slice(0, 6).join(', ')
+        const suffix =
+          missingFields.length > 6 ? ` (+${missingFields.length - 6} more)` : ''
+        setCreateError(`Missing required fields: ${preview}${suffix}`)
+        setIsCreating(false)
+        return
+      }
+    }
+
     const fieldsToSubmit = [
       ...GROUP_A_FIELDS,
       ...(session.user.role === 'Analyst' ? [] : GROUP_B_FIELDS),
@@ -780,6 +816,7 @@ function App() {
 
   const handleOpenShipments = () => {
     setIsActivityOpen(false)
+    setIsDeleteOpen(false)
     navigate('/shipments')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -789,12 +826,14 @@ function App() {
     resetCreateForm()
     setOpenSections(new Set(['shipment-details']))
     setIsActivityOpen(false)
+    setIsDeleteOpen(false)
     navigate('/shipments/new')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleOpenDashboard = () => {
     setIsActivityOpen(false)
+    setIsDeleteOpen(false)
     navigate('/dashboard')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -804,12 +843,9 @@ function App() {
     formRef.current?.requestSubmit()
   }
 
-  const handleHeaderDelete = async () => {
-    if (!editingId) return
-    const ok = await handleDeleteShipment({ _id: editingId } as AirShipment)
-    if (ok) {
-      handleOpenShipments()
-    }
+  const handleHeaderDelete = () => {
+    if (!editingId || !canDeleteShipment) return
+    setIsDeleteOpen(true)
   }
 
   const toggleSection = (id: string) => {
@@ -872,6 +908,19 @@ function App() {
 
   const handleCloseActivity = () => {
     setIsActivityOpen(false)
+  }
+
+  const handleCloseDelete = () => {
+    setIsDeleteOpen(false)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!editingId) return
+    const ok = await handleDeleteShipment({ _id: editingId } as AirShipment)
+    setIsDeleteOpen(false)
+    if (ok) {
+      handleOpenShipments()
+    }
   }
 
   const handleOpenFilter = () => {
@@ -946,6 +995,9 @@ function App() {
     : false
   const pendingBillingCount = canSeeBilling
     ? shipments.filter((item) => !item.invoiceNumber).length
+    : null
+  const invoicedCount = canSeeBilling
+    ? shipments.filter((item) => Boolean(item.invoiceNumber)).length
     : null
   const apiLabel = API_URL.replace(/^https?:\/\//, '')
   const showLogin = !session
@@ -1137,10 +1189,14 @@ function App() {
       .slice(0, 5)
   }, [shipments])
 
-  const billingQueue = useMemo(() => {
-    if (!canSeeBilling) return []
-    return shipments.filter((item) => !item.invoiceNumber).slice(0, 5)
-  }, [canSeeBilling, shipments])
+  const pendingShipments = useMemo(() => {
+    return shipments
+      .filter((item) => {
+        const status = String(item.flightStatus || '').toLowerCase()
+        return status.includes('pending')
+      })
+      .slice(0, 5)
+  }, [shipments])
 
   const alertsSummary = useMemo(() => {
     const holdCount = shipments.filter((item) =>
@@ -1470,7 +1526,7 @@ function App() {
                   </span>
                   <span className="sidebar-link-text">Air Shipments</span>
                 </button>
-                <p className="sidebar-hint">Role-based columns adapt to your access.</p>
+          
                 <div className="sidebar-footer">
                   <button
                     className="theme-toggle"
@@ -1538,9 +1594,17 @@ function App() {
                       </p>
                     </div>
                     <div className="stat-card">
-                      <p className="stat-label">Team leads online</p>
-                      <p className="stat-value">3</p>
-                      <p className="stat-meta">Presence ready</p>
+                      <p className="stat-label">Invoiced shipments</p>
+                      <p className="stat-value">
+                        {shipmentsLoading
+                          ? '...'
+                          : invoicedCount === null
+                            ? '--'
+                            : invoicedCount.toLocaleString()}
+                      </p>
+                      <p className="stat-meta">
+                        {invoicedCount === null ? 'Not visible to your role' : 'Invoice on file'}
+                      </p>
                     </div>
                   </div>
                   <div className="overview-grid">
@@ -1629,36 +1693,32 @@ function App() {
                       <div className="panel overview-panel">
                         <div className="overview-header">
                           <div>
-                            <p className="eyebrow">Billing</p>
-                            <h3>Billing queue</h3>
+                            <p className="eyebrow">Status</p>
+                            <h3>Pending shipments</h3>
                           </div>
-                          <span className="overview-count">
-                            {canSeeBilling ? billingQueue.length : '--'}
-                          </span>
+                          <span className="overview-count">{pendingShipments.length}</span>
                         </div>
-                        {!canSeeBilling ? (
-                          <p className="overview-empty">Not visible to your role.</p>
-                        ) : billingQueue.length ? (
+                        {pendingShipments.length ? (
                           <div className="overview-list">
-                            {billingQueue.map((item, index) => {
+                            {pendingShipments.map((item, index) => {
                               const clientLabel =
                                 String(item.client || 'Unknown').trim() || 'Unknown'
                               const awbLabel = String(item.awb || '').trim()
                               return (
-                                <div key={item._id || `billing-${index}`} className="overview-item">
+                                <div key={item._id || `pending-${index}`} className="overview-item">
                                   <div>
                                     <p className="overview-title">{clientLabel}</p>
                                     <p className="overview-sub">
-                                      {awbLabel ? `AWB ${awbLabel}` : 'Invoice missing'}
+                                      {awbLabel ? `AWB ${awbLabel}` : 'Flight pending'}
                                     </p>
                                   </div>
-                                  <span className="overview-tag">Missing invoice</span>
+                                  <span className="overview-tag">Pending</span>
                                 </div>
                               )
                             })}
                           </div>
                         ) : (
-                          <p className="overview-empty">No pending billing items.</p>
+                          <p className="overview-empty">No pending flight statuses.</p>
                         )}
                       </div>
 
@@ -2385,6 +2445,40 @@ function App() {
                             ) : (
                               <p className="activity-empty">No activity recorded yet.</p>
                             )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                    {isDeleteOpen ? (
+                      <div className="modal-overlay" role="dialog" aria-modal="true">
+                        <div className="modal-panel confirm-modal">
+                          <div className="modal-header">
+                            <div>
+                              <p className="eyebrow">Delete shipment</p>
+                              <h2>Confirm delete</h2>
+                            </div>
+                            <button className="text-button" type="button" onClick={handleCloseDelete}>
+                              Close
+                            </button>
+                          </div>
+                          <p className="modal-sub">
+                            This will permanently remove {formTitle}. This cannot be undone.
+                          </p>
+                          <div className="form-actions">
+                            <button
+                              className="ghost-button"
+                              type="button"
+                              onClick={handleCloseDelete}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              className="ghost-button danger"
+                              type="button"
+                              onClick={handleConfirmDelete}
+                            >
+                              Delete shipment
+                            </button>
                           </div>
                         </div>
                       </div>

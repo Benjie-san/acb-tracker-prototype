@@ -9,6 +9,7 @@ const {
   ROLE_CAN_DELETE,
   ROLE_CAN_BULK_EDIT,
   ALLOWED_SORT_FIELDS,
+  GROUP_A_FIELDS,
 } = require("../utils/fields");
 
 const router = express.Router();
@@ -39,6 +40,21 @@ const withUserLabels = (query) =>
   query
     .populate("createdBy", "displayName username")
     .populate("updatedBy", "displayName username");
+
+const findMissingRequired = (payload) =>
+  GROUP_A_FIELDS.filter((field) => {
+    if (!Object.prototype.hasOwnProperty.call(payload, field)) {
+      return true;
+    }
+    const value = payload[field];
+    if (value === null || value === undefined) {
+      return true;
+    }
+    if (typeof value === "string" && !value.trim()) {
+      return true;
+    }
+    return false;
+  });
 
 router.get("/", auth, async (req, res, next) => {
   try {
@@ -128,6 +144,12 @@ router.post("/", auth, requireRole(ROLE_CAN_CREATE), async (req, res, next) => {
     const payload = pickAllowedFields(req.body, writableFields);
     if (!Object.keys(payload).length) {
       return res.status(400).json({ error: "No writable fields provided" });
+    }
+    const missingFields = findMissingRequired(payload);
+    if (missingFields.length) {
+      return res.status(400).json({
+        error: `Missing required fields: ${missingFields.join(", ")}`,
+      });
     }
 
     const shipment = new AirShipment({
