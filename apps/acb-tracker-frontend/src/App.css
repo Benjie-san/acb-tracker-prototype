@@ -788,6 +788,17 @@
   background: var(--surface-muted);
 }
 
+.accordion-header[data-open='true'] {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.accordion-header[data-open='true'] .accordion-icon {
+  color: var(--accent-strong);
+  border-color: var(--accent-border);
+  background: var(--accent-tint);
+}
+
 .accordion-icon {
   width: 28px;
   height: 28px;

@@ -2285,6 +2285,7 @@ function App() {
                             <div key={section.id} className="accordion-section">
                               <button
                                 className="accordion-header"
+                                data-open={isOpen ? 'true' : 'false'}
                                 type="button"
                                 onClick={() => toggleSection(section.id)}
                                 aria-expanded={isOpen}
