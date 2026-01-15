@@ -35,6 +35,11 @@ const buildProjection = (role) => {
   }, {});
 };
 
+const withUserLabels = (query) =>
+  query
+    .populate("createdBy", "displayName username")
+    .populate("updatedBy", "displayName username");
+
 router.get("/", auth, async (req, res, next) => {
   try {
     const role = req.user.role;
@@ -71,11 +76,13 @@ router.get("/", auth, async (req, res, next) => {
     }
 
     const [items, total] = await Promise.all([
-      AirShipment.find(filter)
-        .select(projection)
-        .sort({ [sortField]: order })
-        .skip((page - 1) * limit)
-        .limit(limit),
+      withUserLabels(
+        AirShipment.find(filter)
+          .select(projection)
+          .sort({ [sortField]: order })
+          .skip((page - 1) * limit)
+          .limit(limit)
+      ),
       AirShipment.countDocuments(filter),
     ]);
 
@@ -97,10 +104,12 @@ router.get("/:id([0-9a-fA-F]{24})", auth, async (req, res, next) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    const item = await AirShipment.findOne({
-      _id: req.params.id,
-      deletedAt: null,
-    }).select(projection);
+    const item = await withUserLabels(
+      AirShipment.findOne({
+        _id: req.params.id,
+        deletedAt: null,
+      }).select(projection)
+    );
 
     if (!item) {
       return res.status(404).json({ error: "Not found" });
@@ -130,7 +139,9 @@ router.post("/", auth, requireRole(ROLE_CAN_CREATE), async (req, res, next) => {
     await shipment.save();
 
     const projection = buildProjection(role);
-    const item = await AirShipment.findById(shipment._id).select(projection);
+    const item = await withUserLabels(
+      AirShipment.findById(shipment._id).select(projection)
+    );
 
     return res.status(201).json({ item });
   } catch (err) {
@@ -157,18 +168,20 @@ router.patch("/:id([0-9a-fA-F]{24})", auth, async (req, res, next) => {
       return res.status(400).json({ error: "No writable fields provided" });
     }
 
-    const updated = await AirShipment.findOneAndUpdate(
-      { _id: req.params.id, version: versionNumber, deletedAt: null },
-      {
-        $set: {
-          ...patch,
-          updatedBy: req.user.id,
-          updatedAt: new Date(),
+    const updated = await withUserLabels(
+      AirShipment.findOneAndUpdate(
+        { _id: req.params.id, version: versionNumber, deletedAt: null },
+        {
+          $set: {
+            ...patch,
+            updatedBy: req.user.id,
+            updatedAt: new Date(),
+          },
+          $inc: { version: 1 },
         },
-        $inc: { version: 1 },
-      },
-      { new: true, runValidators: true }
-    ).select(buildProjection(role));
+        { new: true, runValidators: true }
+      ).select(buildProjection(role))
+    );
 
     if (!updated) {
       const exists = await AirShipment.exists({
