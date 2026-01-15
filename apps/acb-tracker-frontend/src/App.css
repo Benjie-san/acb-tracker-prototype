@@ -396,6 +396,53 @@
   flex-wrap: wrap;
 }
 
+.shipments-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  min-height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--muted);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.shipments-search:focus-within {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px var(--accent-tint);
+}
+
+.shipments-search .icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shipments-search svg {
+  width: 16px;
+  height: 16px;
+}
+
+.shipments-search input {
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.92rem;
+  min-width: clamp(160px, 18vw, 240px);
+}
+
+.shipments-search input::placeholder {
+  color: var(--muted);
+}
+
+.shipments-search input:focus {
+  outline: none;
+}
+
 .shipments-toolbar {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

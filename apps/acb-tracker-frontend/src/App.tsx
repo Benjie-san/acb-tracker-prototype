@@ -7,6 +7,7 @@ import { API_URL } from './config'
 import {
   GROUP_A_FIELDS,
   GROUP_B_FIELDS,
+  GROUP_C_FIELDS,
   LIST_COLUMNS,
   buildInitialForm,
 } from './shipments/fields'
@@ -406,6 +407,17 @@ function App() {
   }, [canCreateShipment, editingId, navigate, route, session])
 
   const shipmentColumns = useMemo(() => LIST_COLUMNS, [])
+  const exportColumns = useMemo(() => {
+    if (!session) return LIST_COLUMNS
+    const fields: FieldDef[] = [...GROUP_A_FIELDS]
+    if (session.user.role !== 'Analyst') {
+      fields.push(...GROUP_B_FIELDS)
+    }
+    if (canSeeActivity) {
+      fields.push(...GROUP_C_FIELDS)
+    }
+    return fields.map(({ key, label, format }) => ({ key, label, format }))
+  }, [canSeeActivity, session])
 
   const bulkFields = useMemo(() => {
     if (!session) return []
@@ -814,9 +826,9 @@ function App() {
 
   const handleExportSelected = () => {
     if (!selectedItems.length) return
-    const headers = shipmentColumns.map((column) => column.label)
+    const headers = exportColumns.map((column) => column.label)
     const rows = selectedItems.map((item) =>
-      shipmentColumns.map((column) => formatExportValue(item[column.key], column.format))
+      exportColumns.map((column) => formatExportValue(item[column.key], column.format))
     )
     const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows])
     const workbook = XLSX.utils.book_new()
@@ -1125,41 +1137,10 @@ function App() {
       .slice(0, 5)
   }, [shipments])
 
-  const recentActivity = useMemo(() => {
-    return shipments
-      .map((item) => {
-        const updatedAt = parseDateValue(item.updatedAt)
-        const createdAt = parseDateValue(item.createdAt)
-        const date = updatedAt || createdAt
-        if (!date) return null
-        const isUpdated =
-          Boolean(updatedAt) && Boolean(createdAt) && updatedAt!.getTime() !== createdAt!.getTime()
-        return { item, date, isUpdated }
-      })
-      .filter((entry): entry is { item: AirShipment; date: Date; isUpdated: boolean } =>
-        Boolean(entry)
-      )
-      .sort((a, b) => b.date.getTime() - a.date.getTime())
-      .slice(0, 5)
-  }, [shipments])
-
   const billingQueue = useMemo(() => {
     if (!canSeeBilling) return []
     return shipments.filter((item) => !item.invoiceNumber).slice(0, 5)
   }, [canSeeBilling, shipments])
-
-  const topClients = useMemo(() => {
-    const counts = new Map<string, number>()
-    shipments.forEach((item) => {
-      const name = String(item.client || '').trim()
-      if (!name) return
-      counts.set(name, (counts.get(name) || 0) + 1)
-    })
-    return Array.from(counts.entries())
-      .map(([client, count]) => ({ client, count }))
-      .sort((a, b) => b.count - a.count || a.client.localeCompare(b.client))
-      .slice(0, 5)
-  }, [shipments])
 
   const alertsSummary = useMemo(() => {
     const holdCount = shipments.filter((item) =>
@@ -1642,42 +1623,6 @@ function App() {
                         )}
                       </div>
 
-                      <div className="panel overview-panel">
-                        <div className="overview-header">
-                          <div>
-                            <p className="eyebrow">Activity</p>
-                            <h3>Recent updates</h3>
-                          </div>
-                          <span className="overview-count">{recentActivity.length}</span>
-                        </div>
-                        {recentActivity.length ? (
-                          <div className="overview-list">
-                            {recentActivity.map((entry, index) => {
-                              const clientLabel =
-                                String(entry.item.client || 'Unknown').trim() || 'Unknown'
-                              const actor = entry.isUpdated
-                                ? formatUserLabel(entry.item.updatedBy)
-                                : formatUserLabel(entry.item.createdBy)
-                              return (
-                                <div
-                                  key={entry.item._id || `activity-${index}`}
-                                  className="overview-item"
-                                >
-                                  <div>
-                                    <p className="overview-title">{clientLabel}</p>
-                                    <p className="overview-sub">
-                                      {entry.isUpdated ? 'Updated' : 'Created'} by {actor}
-                                    </p>
-                                  </div>
-                                  <span className="overview-tag">{formatDateTime(entry.date)}</span>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        ) : (
-                          <p className="overview-empty">No recent activity to show.</p>
-                        )}
-                      </div>
                     </div>
 
                     <div className="overview-column">
@@ -1717,30 +1662,6 @@ function App() {
                         )}
                       </div>
 
-                      <div className="panel overview-panel">
-                        <div className="overview-header">
-                          <div>
-                            <p className="eyebrow">Volume</p>
-                            <h3>Top clients</h3>
-                          </div>
-                          <span className="overview-count">{topClients.length}</span>
-                        </div>
-                        {topClients.length ? (
-                          <div className="overview-list">
-                            {topClients.map((client) => (
-                              <div key={client.client} className="overview-item">
-                                <div>
-                                  <p className="overview-title">{client.client}</p>
-                                  <p className="overview-sub">Shipments this page</p>
-                                </div>
-                                <span className="overview-tag">{client.count}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="overview-empty">No client data yet.</p>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </>
@@ -1753,6 +1674,37 @@ function App() {
                         <p>Role based columns with optimistic updates.</p>
                       </div>
                       <div className="shipments-actions">
+                        <label className="shipments-search">
+                          <span className="icon" aria-hidden="true">
+                            <svg viewBox="0 0 20 20" role="img" aria-hidden="true">
+                              <circle
+                                cx="9"
+                                cy="9"
+                                r="5.5"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                              />
+                              <path
+                                d="M13 13l4 4"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                          </span>
+                          <input
+                            type="search"
+                            value={query}
+                            onChange={(event) => {
+                              setQuery(event.target.value)
+                              setPage(1)
+                            }}
+                            placeholder="Search shipments"
+                            aria-label="Search shipments"
+                          />
+                        </label>
                         <button
                           className="ghost-button filter-button"
                           type="button"
@@ -2078,19 +2030,6 @@ function App() {
                         </div>
 
                         <div className="filter-section">
-                          <label className="field-block">
-                            <span>Sort by</span>
-                            <select
-                              value={sortDraftField}
-                              onChange={(event) => setSortDraftField(event.target.value)}
-                            >
-                              {sortOptions.map((option) => (
-                                <option key={option.key} value={option.key}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
                           <label className="field-block">
                             <span>Order</span>
                             <select
