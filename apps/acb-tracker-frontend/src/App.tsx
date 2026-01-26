@@ -206,6 +206,7 @@ function App() {
   const [sortDraftOrder, setSortDraftOrder] = useState<'asc' | 'desc'>('desc')
   const [monthDraft, setMonthDraft] = useState('')
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
   const [openSections, setOpenSections] = useState<Set<string>>(
     () => new Set(['shipment-details'])
   )
@@ -318,6 +319,7 @@ function App() {
     if (route !== 'shipments-new') {
       setIsActivityOpen(false)
       setIsDeleteOpen(false)
+      setIsEditOpen(false)
     }
   }, [route, setIsActivityOpen])
 
@@ -606,13 +608,11 @@ function App() {
     setCreateSuccess(null)
     setOpenSections(new Set(['shipment-details']))
     setIsActivityOpen(false)
-    navigate('/shipments/new')
+    setIsEditOpen(true)
   }
 
   const handleDeleteShipment = async (item: AirShipment) => {
     if (!session || !item._id) return false
-    const confirmed = window.confirm('Delete this shipment? This cannot be undone.')
-    if (!confirmed) return false
 
     try {
       const response = await fetch(`${API_URL}/air-shipments/${item._id}`, {
@@ -817,6 +817,7 @@ function App() {
   const handleOpenShipments = () => {
     setIsActivityOpen(false)
     setIsDeleteOpen(false)
+    setIsEditOpen(false)
     navigate('/shipments')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -827,6 +828,7 @@ function App() {
     setOpenSections(new Set(['shipment-details']))
     setIsActivityOpen(false)
     setIsDeleteOpen(false)
+    setIsEditOpen(false)
     navigate('/shipments/new')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -834,6 +836,7 @@ function App() {
   const handleOpenDashboard = () => {
     setIsActivityOpen(false)
     setIsDeleteOpen(false)
+    setIsEditOpen(false)
     navigate('/dashboard')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -910,6 +913,13 @@ function App() {
     setIsActivityOpen(false)
   }
 
+  const handleCloseEdit = () => {
+    setIsActivityOpen(false)
+    setIsDeleteOpen(false)
+    setIsEditOpen(false)
+    resetCreateForm()
+  }
+
   const handleCloseDelete = () => {
     setIsDeleteOpen(false)
   }
@@ -924,7 +934,7 @@ function App() {
   }
 
   const handleOpenFilter = () => {
-    const fallbackKey = shipmentColumns[0]?.key || 'client'
+    const fallbackKey = filterColumns[0]?.key || 'client'
     const initialFilters = filters.length
       ? filters.map((filter) => ({ ...filter }))
       : [createFilterRow(fallbackKey)]
@@ -941,7 +951,7 @@ function App() {
   }
 
   const handleAddFilterRow = () => {
-    const fallbackKey = shipmentColumns[0]?.key || 'client'
+    const fallbackKey = filterColumns[0]?.key || 'client'
     setFilterDraft((prev) => [...prev, createFilterRow(fallbackKey)])
   }
 
@@ -971,7 +981,7 @@ function App() {
   }
 
   const handleResetFilters = () => {
-    const fallbackKey = shipmentColumns[0]?.key || 'client'
+    const fallbackKey = filterColumns[0]?.key || 'client'
     setMonthDraft('')
     setMonthFilter('')
     setFilters([])
@@ -1105,6 +1115,10 @@ function App() {
       ),
     []
   )
+  const filterColumns = useMemo(() => {
+    const allowed = [...GROUP_A_FIELDS, ...(showBillingFields ? GROUP_B_FIELDS : [])]
+    return allowed.map(({ key, label }) => ({ key, label }))
+  }, [showBillingFields])
 
   const activeFilters = useMemo(
     () => filters.filter((filter) => filter.value.trim()),
@@ -1348,6 +1362,235 @@ function App() {
       setIsBulkSaving(false)
     }
   }
+
+  const isEditModal = route === 'shipments' && isEditOpen
+  const shipmentForm = (
+    <div className={`panel create-panel${isEditModal ? ' form-modal' : ''}`}>
+      <div className="shipments-header is-detail">
+        <div className="detail-heading">
+          <button
+            className="ghost-button back-button"
+            type="button"
+            onClick={isEditModal ? handleCloseEdit : handleOpenShipments}
+            aria-label={isEditModal ? 'Close' : 'Back to list'}
+          >
+            <span className="back-caret" aria-hidden="true">
+              {'<'}
+            </span>
+          </button>
+          <h2 className="detail-title">{formTitle}</h2>
+        </div>
+        <div className="shipments-actions">
+          {editingId && canSeeActivity ? (
+            <button className="ghost-button" type="button" onClick={handleOpenActivity}>
+              Activity log
+            </button>
+          ) : null}
+          {editingId && canEditShipment ? (
+            <button className="ghost-button" type="button" onClick={handleHeaderEdit}>
+              Edit
+            </button>
+          ) : null}
+          {editingId && canDeleteShipment ? (
+            <button className="ghost-button danger" type="button" onClick={handleHeaderDelete}>
+              Delete
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <form ref={formRef} className="create-form" onSubmit={handleCreateSubmit}>
+        <div className="form-accordion">
+          {formSections.map((section) => {
+            const isOpen = openSections.has(section.id)
+            return (
+              <div key={section.id} className="accordion-section">
+                <button
+                  className="accordion-header"
+                  data-open={isOpen ? 'true' : 'false'}
+                  type="button"
+                  onClick={() => toggleSection(section.id)}
+                  aria-expanded={isOpen}
+                  aria-controls={`section-${section.id}`}
+                >
+                  <span>{section.title}</span>
+                  <span className="accordion-icon" aria-hidden="true">
+                    {isOpen ? '-' : '+'}
+                  </span>
+                </button>
+                {isOpen ? (
+                  <div className="accordion-panel" id={`section-${section.id}`}>
+                    <div className="form-grid">
+                      {section.fields.map((field) => {
+                        const value = createForm[field.key]
+                        const inputValue =
+                          typeof value === 'string' || typeof value === 'number'
+                            ? String(value)
+                            : ''
+                        if (field.input === 'checkbox') {
+                          return (
+                            <label key={field.key} className="field-check">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(value)}
+                                onChange={(event) =>
+                                  handleCreateChange(field.key, event.target.checked)
+                                }
+                              />
+                              <span>{field.label}</span>
+                            </label>
+                          )
+                        }
+
+                        if (field.input === 'textarea') {
+                          return (
+                            <label key={field.key} className="field-block field-textarea">
+                              <span>{field.label}</span>
+                              <textarea
+                                name={field.key}
+                                rows={3}
+                                value={inputValue}
+                                onChange={(event) =>
+                                  handleCreateChange(field.key, event.target.value)
+                                }
+                              />
+                            </label>
+                          )
+                        }
+
+                        return (
+                          <label key={field.key} className="field-block">
+                            <span>{field.label}</span>
+                            <input
+                              type={
+                                field.input === 'number'
+                                  ? 'number'
+                                  : field.input === 'date'
+                                    ? 'date'
+                                    : 'text'
+                              }
+                              name={field.key}
+                              value={inputValue}
+                              onChange={(event) =>
+                                handleCreateChange(field.key, event.target.value)
+                              }
+                            />
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )
+          })}
+        </div>
+
+        {createError ? (
+          <div className="form-alert" role="alert" aria-live="polite">
+            {createError}
+          </div>
+        ) : null}
+        {createSuccess ? (
+          <div className="form-success" role="status" aria-live="polite">
+            {createSuccess}
+          </div>
+        ) : null}
+
+        <div className="form-actions">
+          <button className="primary-button" type="submit" disabled={isCreating}>
+            {isCreating
+              ? editingId
+                ? 'Saving...'
+                : 'Creating...'
+              : editingId
+                ? 'Save changes'
+                : 'Save shipment'}
+          </button>
+          <button
+            className="ghost-button"
+            type="button"
+            onClick={isEditModal ? handleCloseEdit : handleOpenShipments}
+          >
+            {isEditModal ? 'Close' : 'View shipments'}
+          </button>
+        </div>
+      </form>
+
+      {isActivityOpen ? (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-panel activity-modal">
+            <div className="modal-header">
+              <div>
+                <p className="eyebrow">Activity log</p>
+                <h2>Shipment history</h2>
+              </div>
+              <button className="text-button" type="button" onClick={handleCloseActivity}>
+                Close
+              </button>
+            </div>
+
+            <div className="activity-meta">
+              <div>
+                <p className="activity-label">Created</p>
+                <p className="activity-value">
+                  {formatUserLabel(activeShipment?.createdBy)} -{' '}
+                  {formatDateTime(activeShipment?.createdAt)}
+                </p>
+              </div>
+              <div>
+                <p className="activity-label">Last updated</p>
+                <p className="activity-value">
+                  {formatUserLabel(activeShipment?.updatedBy)} -{' '}
+                  {formatDateTime(activeShipment?.updatedAt)}
+                </p>
+              </div>
+            </div>
+
+            <div className="activity-body">
+              {activityEntries.length ? (
+                <ul className="activity-list">
+                  {activityEntries.map((entry, index) => (
+                    <li key={`${entry}-${index}`} className="activity-item">
+                      {entry}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="activity-empty">No activity recorded yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {isDeleteOpen ? (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-panel confirm-modal">
+            <div className="modal-header">
+              <div>
+                <p className="eyebrow">Delete shipment</p>
+                <h2>Confirm delete</h2>
+              </div>
+              <button className="text-button" type="button" onClick={handleCloseDelete}>
+                Close
+              </button>
+            </div>
+            <p className="modal-sub">
+              This will permanently remove {formTitle}. This cannot be undone.
+            </p>
+            <div className="form-actions">
+              <button className="ghost-button" type="button" onClick={handleCloseDelete}>
+                Cancel
+              </button>
+              <button className="ghost-button danger" type="button" onClick={handleConfirmDelete}>
+                Delete shipment
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
 
   return (
     <div className="app" data-theme={theme}>
@@ -2145,7 +2388,7 @@ function App() {
                                       }
                                       aria-label="Filter column"
                                     >
-                                      {shipmentColumns.map((column) => (
+                                      {filterColumns.map((column) => (
                                         <option key={column.key} value={column.key}>
                                           {column.label}
                                         </option>
@@ -2228,263 +2471,15 @@ function App() {
                       </div>
                     </div>
                   ) : null}
+                  {isEditModal ? (
+                    <div className="modal-overlay" role="dialog" aria-modal="true">
+                      {shipmentForm}
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <div className="shipments-view">
-                  <div className="panel create-panel">
-                    <div className="shipments-header is-detail">
-                      <div className="detail-heading">
-                        <button
-                          className="ghost-button back-button"
-                          type="button"
-                          onClick={handleOpenShipments}
-                          aria-label="Back to list"
-                        >
-                          <span className="back-caret" aria-hidden="true">
-                            {'‹'}
-                          </span>
-                        </button>
-                        <h2 className="detail-title">{formTitle}</h2>
-                      </div>
-                      <div className="shipments-actions">
-                        {editingId && canSeeActivity ? (
-                          <button
-                            className="ghost-button"
-                            type="button"
-                            onClick={handleOpenActivity}
-                          >
-                            Activity log
-                          </button>
-                        ) : null}
-                        {editingId && canEditShipment ? (
-                          <button
-                            className="ghost-button"
-                            type="button"
-                            onClick={handleHeaderEdit}
-                          >
-                            Edit
-                          </button>
-                        ) : null}
-                        {editingId && canDeleteShipment ? (
-                          <button
-                            className="ghost-button danger"
-                            type="button"
-                            onClick={handleHeaderDelete}
-                          >
-                            Delete
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <form ref={formRef} className="create-form" onSubmit={handleCreateSubmit}>
-                      <div className="form-accordion">
-                        {formSections.map((section) => {
-                          const isOpen = openSections.has(section.id)
-                          return (
-                            <div key={section.id} className="accordion-section">
-                              <button
-                                className="accordion-header"
-                                data-open={isOpen ? 'true' : 'false'}
-                                type="button"
-                                onClick={() => toggleSection(section.id)}
-                                aria-expanded={isOpen}
-                                aria-controls={`section-${section.id}`}
-                              >
-                                <span>{section.title}</span>
-                                <span className="accordion-icon" aria-hidden="true">
-                                  {isOpen ? '-' : '+'}
-                                </span>
-                              </button>
-                              {isOpen ? (
-                                <div
-                                  className="accordion-panel"
-                                  id={`section-${section.id}`}
-                                >
-                                  <div className="form-grid">
-                                    {section.fields.map((field) => {
-                                      const value = createForm[field.key]
-                                      const inputValue =
-                                        typeof value === 'string' || typeof value === 'number'
-                                          ? String(value)
-                                          : ''
-                                      if (field.input === 'checkbox') {
-                                        return (
-                                          <label key={field.key} className="field-check">
-                                            <input
-                                              type="checkbox"
-                                              checked={Boolean(value)}
-                                              onChange={(event) =>
-                                                handleCreateChange(
-                                                  field.key,
-                                                  event.target.checked
-                                                )
-                                              }
-                                            />
-                                            <span>{field.label}</span>
-                                          </label>
-                                        )
-                                      }
-
-                                      if (field.input === 'textarea') {
-                                        return (
-                                          <label
-                                            key={field.key}
-                                            className="field-block field-textarea"
-                                          >
-                                            <span>{field.label}</span>
-                                            <textarea
-                                              name={field.key}
-                                              rows={3}
-                                              value={inputValue}
-                                              onChange={(event) =>
-                                                handleCreateChange(field.key, event.target.value)
-                                              }
-                                            />
-                                          </label>
-                                        )
-                                      }
-
-                                      return (
-                                        <label key={field.key} className="field-block">
-                                          <span>{field.label}</span>
-                                          <input
-                                            type={
-                                              field.input === 'number'
-                                                ? 'number'
-                                                : field.input === 'date'
-                                                  ? 'date'
-                                                  : 'text'
-                                            }
-                                            name={field.key}
-                                            value={inputValue}
-                                            onChange={(event) =>
-                                              handleCreateChange(field.key, event.target.value)
-                                            }
-                                          />
-                                        </label>
-                                      )
-                                    })}
-                                  </div>
-                                </div>
-                              ) : null}
-                            </div>
-                          )
-                        })}
-                      </div>
-
-                      {createError ? (
-                        <div className="form-alert" role="alert" aria-live="polite">
-                          {createError}
-                        </div>
-                      ) : null}
-                      {createSuccess ? (
-                        <div className="form-success" role="status" aria-live="polite">
-                          {createSuccess}
-                        </div>
-                      ) : null}
-
-                      <div className="form-actions">
-                        <button className="primary-button" type="submit" disabled={isCreating}>
-                          {isCreating
-                            ? editingId
-                              ? 'Saving...'
-                              : 'Creating...'
-                            : editingId
-                              ? 'Save changes'
-                              : 'Save shipment'}
-                        </button>
-                        <button className="ghost-button" type="button" onClick={handleOpenShipments}>
-                          View shipments
-                        </button>
-                      </div>
-                    </form>
-
-                    {isActivityOpen ? (
-                      <div className="modal-overlay" role="dialog" aria-modal="true">
-                        <div className="modal-panel activity-modal">
-                          <div className="modal-header">
-                            <div>
-                              <p className="eyebrow">Activity log</p>
-                              <h2>Shipment history</h2>
-                            </div>
-                            <button
-                              className="text-button"
-                              type="button"
-                              onClick={handleCloseActivity}
-                            >
-                              Close
-                            </button>
-                          </div>
-
-                          <div className="activity-meta">
-                            <div>
-                              <p className="activity-label">Created</p>
-                              <p className="activity-value">
-                                {formatUserLabel(activeShipment?.createdBy)} -{' '}
-                                {formatDateTime(activeShipment?.createdAt)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="activity-label">Last updated</p>
-                              <p className="activity-value">
-                                {formatUserLabel(activeShipment?.updatedBy)} -{' '}
-                                {formatDateTime(activeShipment?.updatedAt)}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="activity-body">
-                            {activityEntries.length ? (
-                              <ul className="activity-list">
-                                {activityEntries.map((entry, index) => (
-                                  <li key={`${entry}-${index}`} className="activity-item">
-                                    {entry}
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p className="activity-empty">No activity recorded yet.</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ) : null}
-                    {isDeleteOpen ? (
-                      <div className="modal-overlay" role="dialog" aria-modal="true">
-                        <div className="modal-panel confirm-modal">
-                          <div className="modal-header">
-                            <div>
-                              <p className="eyebrow">Delete shipment</p>
-                              <h2>Confirm delete</h2>
-                            </div>
-                            <button className="text-button" type="button" onClick={handleCloseDelete}>
-                              Close
-                            </button>
-                          </div>
-                          <p className="modal-sub">
-                            This will permanently remove {formTitle}. This cannot be undone.
-                          </p>
-                          <div className="form-actions">
-                            <button
-                              className="ghost-button"
-                              type="button"
-                              onClick={handleCloseDelete}
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              className="ghost-button danger"
-                              type="button"
-                              onClick={handleConfirmDelete}
-                            >
-                              Delete shipment
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
+                  {shipmentForm}
                 </div>
               )}
             </section>
