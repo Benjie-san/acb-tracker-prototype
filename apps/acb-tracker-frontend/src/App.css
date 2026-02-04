@@ -69,8 +69,8 @@
   z-index: 1;
   background: var(--shell-bg);
   border: 1px solid var(--shell-border);
-  border-radius: 12px;
-  padding: clamp(12px, 4vw, 24px);
+  border-radius: 0;
+  padding: 0;
   box-shadow: none;
   min-height: 100vh;
   width: 100%;
@@ -263,6 +263,7 @@
 
 .grid-preview {
   background: var(--card);
+  border-right: 1px solid var(--line);
   border-radius: 12px;
   border: 1px solid var(--line);
   padding: 18px;
@@ -334,6 +335,7 @@
 
 .panel {
   background: var(--card);
+  border-right: 1px solid var(--line);
   border-radius: 12px;
   border: 1px solid var(--line);
   padding: clamp(22px, 3vw, 32px);
@@ -343,6 +345,9 @@
 .shipments-panel {
   /*margin-top: 24px;*/
   min-width: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0 16px 0 0;
 }
 
 .create-panel {
@@ -356,6 +361,8 @@
   gap: 16px;
   flex-wrap: wrap;
   margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
 }
 
 .shipments-header h2 {
@@ -411,6 +418,7 @@
   border-radius: 10px;
   border: 1px solid var(--line);
   background: var(--card);
+  border-right: 1px solid var(--line);
   color: var(--muted);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -491,13 +499,15 @@
   border: 1px solid var(--line);
   padding: 10px 12px;
   background: var(--card);
+  border-right: 1px solid var(--line);
   color: var(--ink);
 }
 
 .shipments-grid-wrap {
-  border: 1px solid var(--line);
-  border-radius: 16px;
+  border: 0;
+  border-radius: 0;
   background: var(--card);
+  border-right: 1px solid var(--line);
   overflow-x: auto;
   width: 100%;
   max-width: 100%;
@@ -611,6 +621,7 @@
   -webkit-appearance: none;
   -moz-appearance: none;
   background: var(--card);
+  border-right: 1px solid var(--line);
   border: 1px solid var(--line);
   border-radius: 4px;
   display: grid;
@@ -775,6 +786,7 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--card);
+  border-right: 1px solid var(--line);
   overflow: hidden;
 }
 
@@ -849,6 +861,7 @@
   border: 1px solid var(--line);
   padding: 10px 12px;
   background: var(--card);
+  border-right: 1px solid var(--line);
   color: var(--ink);
   font: inherit;
 }
@@ -866,6 +879,7 @@
   border-radius: 12px;
   border: 1px solid var(--line);
   background: var(--card);
+  border-right: 1px solid var(--line);
   font-weight: 600;
   color: var(--ink);
 }
@@ -912,6 +926,7 @@
   border: 1px solid var(--line);
   padding: 12px 14px;
   background: var(--card);
+  border-right: 1px solid var(--line);
   color: var(--ink);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -1039,7 +1054,7 @@
   --sidebar-width: 220px;
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1.2fr) minmax(0, 0.8fr);
-  gap: clamp(24px, 4vw, 48px);
+  gap: 20px;
   align-items: stretch;
   flex: 1;
   min-height: 0;
@@ -1050,6 +1065,7 @@
 .dashboard-main,
 .dashboard-side {
   min-height: 0;
+  padding: 16px 0;
 }
 
 .dashboard.is-shipments {
@@ -1071,13 +1087,15 @@
   align-self: stretch;
   width: var(--sidebar-width);
   transition: width 0.3s ease;
+  background: var(--card);
+  border-right: 1px solid var(--line);
 }
 
 .sidebar-card {
   background: var(--card);
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  padding: 16px;
+  border-radius: 0;
+  border: 0;
+  padding: 18px 14px;
   box-shadow: none;
   display: flex;
   flex-direction: column;
@@ -1098,6 +1116,7 @@
   height: 40px;
   border-radius: 12px;
   padding: 6px;
+  border: 0;
   transition: width 0.3s ease, height 0.3s ease;
 }
 
@@ -1120,7 +1139,7 @@
 }
 
 .sidebar-hide {
-  border: 1px solid var(--line);
+  border: 0;
   background: var(--surface-glass);
   color: var(--muted);
   border-radius: 10px;
@@ -1182,7 +1201,7 @@
 }
 
 .sidebar-link {
-  border: 1px solid transparent;
+  border: 0;
   background: var(--surface-glass);
   color: var(--ink);
   padding: 8px;
@@ -1203,13 +1222,13 @@
 }
 
 .sidebar-link:hover {
-  border-color: var(--line);
+  border-color: transparent;
   transform: translateY(-1px);
 }
 
 .sidebar-link.is-active {
   background: var(--accent-soft);
-  border-color: var(--accent-border);
+  border-color: transparent;
   color: var(--accent-strong);
 }
 
@@ -1441,6 +1460,7 @@
 
 .stat-card {
   background: var(--card);
+  border-right: 1px solid var(--line);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 14px 16px;
@@ -1568,6 +1588,7 @@
 .modal-panel {
   width: min(560px, 100%);
   background: var(--card);
+  border-right: 1px solid var(--line);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 20px;
