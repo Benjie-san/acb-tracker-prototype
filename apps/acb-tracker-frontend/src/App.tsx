@@ -1042,7 +1042,7 @@ function App() {
   const invoicedCount = canSeeBilling
     ? shipments.filter((item) => Boolean(item.invoiceNumber)).length
     : null
-  const apiLabel = API_URL.replace(/^https?:\/\//, '')
+  //const apiLabel = API_URL.replace(/^https?:\/\//, '')
   const showLogin = !session
   const isShipmentsRoute = route === 'shipments' || route === 'shipments-new'
   const showBillingFields =
@@ -1691,7 +1691,6 @@ function App() {
         {showLogin ? (
           <div className="content">
             <section className="intro">
-              <p className="eyebrow">Single tenant operations</p>
               <h1>Track air shipments with clarity.</h1>
               <p className="lead">
                 A focused workspace for analysts, billing, and team leads to keep
@@ -1765,9 +1764,6 @@ function App() {
                 <button className="primary-button" type="submit" disabled={isSubmitting}>
                   {isSubmitting ? 'Signing in...' : 'Sign in'}
                 </button>
-                {/* <p className="helper">
-                  Server: <span>{apiLabel}</span>
-                </p> */}
               </form>
             </section>
           </div>
