@@ -71,11 +71,13 @@ export const LIST_COLUMN_KEYS = [
   'client',
   'preAlertDate',
   'releaseDate',
+  'releaseStatus',
   'awb',
   'clvs',
   'lvs',
   'pga',
   'total',
+  'invoiceNumber',
   'shipmentComments',
   'analyst',
 ] as const

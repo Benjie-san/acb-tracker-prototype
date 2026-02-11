@@ -53,7 +53,26 @@ const statusTone = (value: unknown) => {
   if (status.includes('pending') || status.includes('in transit') || status.includes('processing')) {
     return 'warn'
   }
-  if (status.includes('hold') || status.includes('delayed') || status.includes('late')) {
+  if (
+    status.includes('hold') ||
+    status.includes('delayed') ||
+    status.includes('late') ||
+    status.includes('cancel')
+  ) {
+    return 'alert'
+  }
+  return 'neutral'
+}
+
+const releaseStatusTone = (value: unknown) => {
+  const status = String(value || '').toLowerCase()
+  if (status.includes('in transit') || status.includes('transit')) {
+    return 'warn'
+  }
+  if (status.includes('released')) {
+    return 'good'
+  }
+  if (status.includes('cancel')) {
     return 'alert'
   }
   return 'neutral'
@@ -458,7 +477,7 @@ function App() {
   }, [sortField, sortOptions])
 
   useEffect(() => {
-    if (!session || route === 'login' || route === 'shipments-new') return
+    if (!session || route === 'login') return
 
     let active = true
 
@@ -584,6 +603,20 @@ function App() {
       const value = item[field.key]
       if (field.input === 'checkbox') {
         nextForm[field.key] = Boolean(value)
+        return
+      }
+
+      if (field.key === 'releaseStatus' && typeof value === 'string') {
+        const text = value.trim().toLowerCase()
+        if (text.includes('in transit') || text === 'transit') {
+          nextForm[field.key] = 'In Transit'
+        } else if (text.includes('released')) {
+          nextForm[field.key] = 'Released'
+        } else if (text.includes('cancel')) {
+          nextForm[field.key] = 'Cancelled'
+        } else {
+          nextForm[field.key] = value
+        }
         return
       }
 
@@ -1364,18 +1397,29 @@ function App() {
   }
 
   const isEditModal = route === 'shipments' && isEditOpen
+  const isCreateModal = route === 'shipments-new'
+  const isFormModal = isEditModal || isCreateModal
   const shipmentForm = (
-    <div className={`panel create-panel${isEditModal ? ' form-modal' : ''}`}>
+    <div className={`panel create-panel${isFormModal ? ' form-modal' : ''}`}>
       <div className="shipments-header is-detail">
         <div className="detail-heading">
           <button
             className="ghost-button back-button"
             type="button"
             onClick={isEditModal ? handleCloseEdit : handleOpenShipments}
-            aria-label={isEditModal ? 'Close' : 'Back to list'}
+            aria-label={isFormModal ? 'Close' : 'Back to list'}
           >
             <span className="back-caret" aria-hidden="true">
-              {'<'}
+              <svg viewBox="0 0 20 20" role="img" aria-hidden="true">
+                <path
+                  d="M12.5 4.5l-5 5 5 5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </span>
           </button>
           <h2 className="detail-title">{formTitle}</h2>
@@ -1386,7 +1430,7 @@ function App() {
               Activity log
             </button>
           ) : null}
-          {editingId && canEditShipment ? (
+          {editingId && canEditShipment && !isFormModal ? (
             <button className="ghost-button" type="button" onClick={handleHeaderEdit}>
               Edit
             </button>
@@ -1449,11 +1493,32 @@ function App() {
                               <textarea
                                 name={field.key}
                                 rows={3}
+                                maxLength={field.key === 'client' ? 20 : undefined}
                                 value={inputValue}
                                 onChange={(event) =>
                                   handleCreateChange(field.key, event.target.value)
                                 }
                               />
+                            </label>
+                          )
+                        }
+
+                        if (field.key === 'releaseStatus') {
+                          return (
+                            <label key={field.key} className="field-block">
+                              <span>{field.label}</span>
+                              <select
+                                name={field.key}
+                                value={inputValue}
+                                onChange={(event) =>
+                                  handleCreateChange(field.key, event.target.value)
+                                }
+                              >
+                                <option value="">Select status</option>
+                                <option value="In Transit">In Transit</option>
+                                <option value="Released">Released</option>
+                                <option value="Cancelled">Cancelled</option>
+                              </select>
                             </label>
                           )
                         }
@@ -1470,6 +1535,7 @@ function App() {
                                     : 'text'
                               }
                               name={field.key}
+                              maxLength={field.key === 'client' ? 20 : undefined}
                               value={inputValue}
                               onChange={(event) =>
                                 handleCreateChange(field.key, event.target.value)
@@ -1512,7 +1578,7 @@ function App() {
             type="button"
             onClick={isEditModal ? handleCloseEdit : handleOpenShipments}
           >
-            {isEditModal ? 'Close' : 'View shipments'}
+            {isFormModal ? 'Close' : 'View shipments'}
           </button>
         </div>
       </form>
@@ -1636,7 +1702,7 @@ function App() {
                 <span className="pill">Bulk updates</span>
                 <span className="pill">Excel export</span>
               </div>
-              <div className="grid-preview">
+              {/* <div className="grid-preview">
                 <div className="grid-header">
                   <span>Client</span>
                   <span>Status</span>
@@ -1658,7 +1724,7 @@ function App() {
                   <span>Jan 15</span>
                 </div>
                 <div className="grid-footnote">Live view updates across roles.</div>
-              </div>
+              </div> */}
             </section>
 
             <section className="panel">
@@ -1699,9 +1765,9 @@ function App() {
                 <button className="primary-button" type="submit" disabled={isSubmitting}>
                   {isSubmitting ? 'Signing in...' : 'Sign in'}
                 </button>
-                <p className="helper">
+                {/* <p className="helper">
                   Server: <span>{apiLabel}</span>
-                </p>
+                </p> */}
               </form>
             </section>
           </div>
@@ -1968,7 +2034,7 @@ function App() {
                     </div>
                   </div>
                 </>
-              ) : route === 'shipments' ? (
+              ) : route === 'shipments' || route === 'shipments-new' ? (
                 <div className="shipments-view">
                   <div className="panel shipments-panel">
                     <div className="shipments-header">
@@ -2147,25 +2213,54 @@ function App() {
                                 {shipmentColumns.map((column) => {
                                   const value = item[column.key]
                                   if (column.format === 'status' && value) {
-                                    const tone = statusTone(value)
+                                    const tone =
+                                      column.key === 'releaseStatus'
+                                        ? releaseStatusTone(value)
+                                        : statusTone(value)
                                     return (
                                       <div
                                         key={`${column.key}-${index}`}
                                         className="shipments-grid-cell"
                                         role="gridcell"
                                       >
-                                        <span className={`status-chip status-${tone}`}>
+                                        <span
+                                          className={`status-chip ${
+                                            column.key === 'releaseStatus'
+                                              ? tone === 'neutral'
+                                                ? 'status-neutral'
+                                                : `status-release-${tone}`
+                                              : `status-${tone}`
+                                          }`}
+                                        >
                                           {formatValue(value)}
                                         </span>
                                       </div>
-                                    )
-                                  }
+                                  )
+                                }
 
+                                if (
+                                  column.key === 'client' ||
+                                  column.key === 'shipmentComments'
+                                ) {
+                                  const text = formatValue(value, column.format)
                                   return (
                                     <div
                                       key={`${column.key}-${index}`}
                                       className="shipments-grid-cell"
                                       role="gridcell"
+                                    >
+                                      <span className="cell-clamp" title={text}>
+                                        {text}
+                                      </span>
+                                    </div>
+                                  )
+                                }
+
+                                return (
+                                  <div
+                                    key={`${column.key}-${index}`}
+                                    className="shipments-grid-cell"
+                                    role="gridcell"
                                     >
                                       {formatValue(value, column.format)}
                                     </div>
@@ -2268,6 +2363,19 @@ function App() {
                                 >
                                   <option value="true">Yes</option>
                                   <option value="false">No</option>
+                                </select>
+                              </label>
+                            ) : bulkFieldDef.key === 'releaseStatus' ? (
+                              <label className="field-block">
+                                <span>Value</span>
+                                <select
+                                  value={typeof bulkValue === 'string' ? bulkValue : ''}
+                                  onChange={(event) => setBulkValue(event.target.value)}
+                                >
+                                  <option value="">Select status</option>
+                                  <option value="In Transit">In Transit</option>
+                                  <option value="Released">Released</option>
+                                  <option value="Cancelled">Cancelled</option>
                                 </select>
                               </label>
                             ) : (
@@ -2471,17 +2579,13 @@ function App() {
                       </div>
                     </div>
                   ) : null}
-                  {isEditModal ? (
+                  {isFormModal ? (
                     <div className="modal-overlay" role="dialog" aria-modal="true">
                       {shipmentForm}
                     </div>
                   ) : null}
                 </div>
-              ) : (
-                <div className="shipments-view">
-                  {shipmentForm}
-                </div>
-              )}
+              ) : null}
             </section>
 
             {!isShipmentsRoute ? (
